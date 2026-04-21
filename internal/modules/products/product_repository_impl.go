@@ -83,10 +83,6 @@ func (r *ProductRepositoryImpl) Search(filters ProductSearchFilters) ([]entities
 		return nil, errors.NewDatabaseError("failed to search products", result.Error)
 	}
 
-	if len(products) == 0 {
-		return nil, &errors.ProductNotFoundError{ID: filters.Name}
-	}
-
 	entitiesList := make([]entities.Product, len(products))
 	for i, p := range products {
 		entitiesList[i] = r.mapModelToEntity(p)
@@ -178,4 +174,3 @@ func containsBrandAndPresentation(products []entities.ProductModel, name, brand,
 	}
 	return false
 }
-
