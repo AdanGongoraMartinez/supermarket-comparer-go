@@ -3,11 +3,12 @@ package products
 import (
 	"strings"
 
-	"gorm.io/gorm"
 	"supermarket-comparer-go/internal/core"
 	"supermarket-comparer-go/internal/database"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
+
+	"gorm.io/gorm"
 )
 
 type ProductRepositoryImpl struct{}
@@ -22,8 +23,8 @@ func (r *ProductRepositoryImpl) Create(input CreateProductInput) *core.Result[en
 		Brand:        input.Brand,
 		Presentation: input.Presentation,
 		Barcode:      input.Barcode,
-		CategoryID:  input.CategoryID,
-		Active:      true,
+		CategoryID:   input.CategoryID,
+		Active:       true,
 	}
 
 	result := database.DB.Create(&product)
@@ -118,8 +119,8 @@ func (r *ProductRepositoryImpl) mapModelToEntity(model entities.ProductModel) en
 		Brand:        stringOrNil(model.Brand),
 		Presentation: stringOrNil(model.Presentation),
 		Barcode:      stringOrNil(model.Barcode),
-		CategoryID:  stringOrNil(model.CategoryID),
-		Active:      model.Active,
+		CategoryID:   stringOrNil(model.CategoryID),
+		Active:       model.Active,
 	}
 }
 
@@ -178,3 +179,4 @@ func containsBrandAndPresentation(products []entities.ProductModel, name, brand,
 	}
 	return false
 }
+

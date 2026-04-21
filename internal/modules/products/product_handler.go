@@ -88,16 +88,7 @@ func sendError(w http.ResponseWriter, status int, message string) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(core.APIResponse{
 		Success: false,
-		Error:  message,
+		Error:   message,
 	})
 }
 
-var _ error = (*CustomError)(nil)
-
-type CustomError struct {
-	Message string
-}
-
-func (e *CustomError) Error() string {
-	return e.Message
-}
