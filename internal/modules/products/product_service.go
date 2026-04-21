@@ -14,17 +14,16 @@ func NewProductService(repo ProductRepository) *ProductService {
 	return &ProductService{repo: repo}
 }
 
-func (s *ProductService) CreateProduct(input CreateProductInput) *core.Result[entities.Product] {
+func (s *ProductService) CreateProduct(input CreateProductInput) (entities.Product, error) {
 	if err := s.validateCreateInput(input); err != nil {
-		return core.Fail[entities.Product](err)
+		return entities.Product{}, err
 	}
 
-	existingResult := s.repo.FindByName(input.Name)
-	if !existingResult.IsSuccess() {
-		return core.Fail[entities.Product](existingResult.GetError())
+	existingProducts, err := s.repo.FindByName(input.Name)
+	if err != nil {
+		return entities.Product{}, err
 	}
 
-	existingProducts := existingResult.GetValue()
 	brand := ""
 	if input.Brand != nil {
 		brand = *input.Brand
@@ -36,59 +35,39 @@ func (s *ProductService) CreateProduct(input CreateProductInput) *core.Result[en
 
 	for _, p := range existingProducts {
 		if p.Name == input.Name && p.Brand == brand && p.Presentation == presentation {
-			return core.Fail[entities.Product](&errors.ProductAlreadyExistsError{
-				Name:        input.Name,
+			return entities.Product{}, &errors.ProductAlreadyExistsError{
+				Name:         input.Name,
 				Presentation: presentation,
-			})
+			}
 		}
 	}
 
-	createResult := s.repo.Create(input)
-	if !createResult.IsSuccess() {
-		return core.Fail[entities.Product](createResult.GetError())
-	}
-
-	return core.Ok(createResult.GetValue())
+	return s.repo.Create(input)
 }
 
-func (s *ProductService) GetProductByID(id string) *core.Result[entities.Product] {
+func (s *ProductService) GetProductByID(id string) (entities.Product, error) {
 	if !core.IsValidUUIDString(id) {
-		return core.Fail[entities.Product](&errors.InvalidProductIDError{ID: id})
+		return entities.Product{}, &errors.InvalidProductIDError{ID: id}
 	}
 
-	result := s.repo.FindByID(id)
-	if !result.IsSuccess() {
-		return core.Fail[entities.Product](result.GetError())
-	}
-
-	return core.Ok(result.GetValue())
+	return s.repo.FindByID(id)
 }
 
-func (s *ProductService) SearchProducts(filters ProductSearchFilters) *core.Result[[]entities.Product] {
-	result := s.repo.Search(filters)
-	if !result.IsSuccess() {
-		return core.Fail[[]entities.Product](result.GetError())
-	}
-
-	return core.Ok(result.GetValue())
+func (s *ProductService) SearchProducts(filters ProductSearchFilters) ([]entities.Product, error) {
+	return s.repo.Search(filters)
 }
 
-func (s *ProductService) DeactivateProduct(id string) *core.Result[any] {
+func (s *ProductService) DeactivateProduct(id string) error {
 	if !core.IsValidUUIDString(id) {
-		return core.Fail[any](&errors.InvalidProductIDError{ID: id})
+		return &errors.InvalidProductIDError{ID: id}
 	}
 
-	existingResult := s.repo.FindByID(id)
-	if !existingResult.IsSuccess() {
-		return core.Fail[any](existingResult.GetError())
+	_, err := s.repo.FindByID(id)
+	if err != nil {
+		return err
 	}
 
-	result := s.repo.Deactivate(id)
-	if !result.IsSuccess() {
-		return core.Fail[any](result.GetError())
-	}
-
-	return core.Ok[any](nil)
+	return s.repo.Deactivate(id)
 }
 
 func (s *ProductService) validateCreateInput(input CreateProductInput) error {
@@ -97,3 +76,4 @@ func (s *ProductService) validateCreateInput(input CreateProductInput) error {
 	}
 	return nil
 }
+

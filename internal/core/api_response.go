@@ -14,32 +14,32 @@ func (r *APIResponse) ToJSON() []byte {
 	return data
 }
 
-func HandleResult[T any](result *Result[T], successStatus int) *APIResponse {
-	if result.IsSuccess() {
+func HandleResult[T any](value T, err error, successStatus int) *APIResponse {
+	if err != nil {
 		return &APIResponse{
-			StatusCode: successStatus,
-			Success:   true,
-			Data:      result.GetValue(),
+			StatusCode: getErrorStatus(err),
+			Success:    false,
+			Error:      err,
 		}
 	}
 	return &APIResponse{
-		StatusCode: getErrorStatus(result.GetError()),
-		Success:   false,
-		Error:     result.GetError(),
+		StatusCode: successStatus,
+		Success:    true,
+		Data:       value,
 	}
 }
 
-func HandleEmptyResult[T any](result *Result[T], successStatus int) *APIResponse {
-	if result.IsSuccess() {
+func HandleEmptyResult(err error, successStatus int) *APIResponse {
+	if err != nil {
 		return &APIResponse{
-			StatusCode: successStatus,
-			Success:   true,
+			StatusCode: getErrorStatus(err),
+			Success:    false,
+			Error:      err,
 		}
 	}
 	return &APIResponse{
-		StatusCode: getErrorStatus(result.GetError()),
-		Success:   false,
-		Error:     result.GetError(),
+		StatusCode: successStatus,
+		Success:    true,
 	}
 }
 

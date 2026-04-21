@@ -3,7 +3,6 @@ package products
 import (
 	"strings"
 
-	"supermarket-comparer-go/internal/core"
 	"supermarket-comparer-go/internal/database"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
@@ -17,7 +16,7 @@ func NewProductRepository() *ProductRepositoryImpl {
 	return &ProductRepositoryImpl{}
 }
 
-func (r *ProductRepositoryImpl) Create(input CreateProductInput) *core.Result[entities.Product] {
+func (r *ProductRepositoryImpl) Create(input CreateProductInput) (entities.Product, error) {
 	product := entities.ProductModel{
 		Name:         input.Name,
 		Brand:        input.Brand,
@@ -29,30 +28,30 @@ func (r *ProductRepositoryImpl) Create(input CreateProductInput) *core.Result[en
 
 	result := database.DB.Create(&product)
 	if result.Error != nil {
-		return core.Fail[entities.Product](errors.NewDatabaseError("failed to create product", result.Error))
+		return entities.Product{}, errors.NewDatabaseError("failed to create product", result.Error)
 	}
 
-	return core.Ok(r.mapModelToEntity(product))
+	return r.mapModelToEntity(product), nil
 }
 
-func (r *ProductRepositoryImpl) FindByID(id string) *core.Result[entities.Product] {
+func (r *ProductRepositoryImpl) FindByID(id string) (entities.Product, error) {
 	var product entities.ProductModel
 	result := database.DB.First(&product, "id = ?", id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return core.Fail[entities.Product](&errors.ProductNotFoundError{ID: id})
+			return entities.Product{}, &errors.ProductNotFoundError{ID: id}
 		}
-		return core.Fail[entities.Product](errors.NewDatabaseError("failed to find product", result.Error))
+		return entities.Product{}, errors.NewDatabaseError("failed to find product", result.Error)
 	}
 
-	return core.Ok(r.mapModelToEntity(product))
+	return r.mapModelToEntity(product), nil
 }
 
-func (r *ProductRepositoryImpl) FindByName(name string) *core.Result[[]entities.Product] {
+func (r *ProductRepositoryImpl) FindByName(name string) ([]entities.Product, error) {
 	var products []entities.ProductModel
 	result := database.DB.Where("name = ?", name).Order("name").Find(&products)
 	if result.Error != nil {
-		return core.Fail[[]entities.Product](errors.NewDatabaseError("failed to find products", result.Error))
+		return nil, errors.NewDatabaseError("failed to find products", result.Error)
 	}
 
 	entitiesList := make([]entities.Product, len(products))
@@ -60,10 +59,10 @@ func (r *ProductRepositoryImpl) FindByName(name string) *core.Result[[]entities.
 		entitiesList[i] = r.mapModelToEntity(p)
 	}
 
-	return core.Ok(entitiesList)
+	return entitiesList, nil
 }
 
-func (r *ProductRepositoryImpl) Search(filters ProductSearchFilters) *core.Result[[]entities.Product] {
+func (r *ProductRepositoryImpl) Search(filters ProductSearchFilters) ([]entities.Product, error) {
 	var products []entities.ProductModel
 	query := database.DB.Model(&entities.ProductModel{})
 
@@ -81,11 +80,11 @@ func (r *ProductRepositoryImpl) Search(filters ProductSearchFilters) *core.Resul
 
 	result := query.Find(&products)
 	if result.Error != nil {
-		return core.Fail[[]entities.Product](errors.NewDatabaseError("failed to search products", result.Error))
+		return nil, errors.NewDatabaseError("failed to search products", result.Error)
 	}
 
 	if len(products) == 0 {
-		return core.Fail[[]entities.Product](&errors.ProductNotFoundError{ID: filters.Name})
+		return nil, &errors.ProductNotFoundError{ID: filters.Name}
 	}
 
 	entitiesList := make([]entities.Product, len(products))
@@ -93,20 +92,20 @@ func (r *ProductRepositoryImpl) Search(filters ProductSearchFilters) *core.Resul
 		entitiesList[i] = r.mapModelToEntity(p)
 	}
 
-	return core.Ok(entitiesList)
+	return entitiesList, nil
 }
 
-func (r *ProductRepositoryImpl) Deactivate(id string) *core.Result[any] {
+func (r *ProductRepositoryImpl) Deactivate(id string) error {
 	result := database.DB.Model(&entities.ProductModel{}).Where("id = ?", id).Update("active", false)
 	if result.Error != nil {
-		return core.Fail[any](errors.NewDatabaseError("failed to deactivate product", result.Error))
+		return errors.NewDatabaseError("failed to deactivate product", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return core.Fail[any](&errors.ProductNotFoundError{ID: id})
+		return &errors.ProductNotFoundError{ID: id}
 	}
 
-	return core.Ok[any](nil)
+	return nil
 }
 
 func (r *ProductRepositoryImpl) mapModelToEntity(model entities.ProductModel) entities.Product {
@@ -131,7 +130,7 @@ func stringOrNil(s *string) string {
 	return *s
 }
 
-func (r *ProductRepositoryImpl) FindByNameAndBrand(name, brand, presentation string) *core.Result[entities.Product] {
+func (r *ProductRepositoryImpl) FindByNameAndBrand(name, brand, presentation string) (entities.Product, error) {
 	var product entities.ProductModel
 	query := database.DB.Where("name = ?", name)
 
@@ -150,12 +149,12 @@ func (r *ProductRepositoryImpl) FindByNameAndBrand(name, brand, presentation str
 	result := query.First(&product)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return core.Fail[entities.Product](nil)
+			return entities.Product{}, nil
 		}
-		return core.Fail[entities.Product](errors.NewDatabaseError("failed to find product", result.Error))
+		return entities.Product{}, errors.NewDatabaseError("failed to find product", result.Error)
 	}
 
-	return core.Ok(r.mapModelToEntity(product))
+	return r.mapModelToEntity(product), nil
 }
 
 func containsBrandAndPresentation(products []entities.ProductModel, name, brand, presentation string) bool {

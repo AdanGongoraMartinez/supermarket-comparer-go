@@ -3,7 +3,6 @@ package products
 import (
 	"testing"
 
-	"supermarket-comparer-go/internal/core"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
 )
@@ -17,9 +16,9 @@ func NewFakeProductRepository() *FakeProductRepository {
 	return &FakeProductRepository{products: []entities.Product{}}
 }
 
-func (r *FakeProductRepository) Create(input CreateProductInput) *core.Result[entities.Product] {
+func (r *FakeProductRepository) Create(input CreateProductInput) (entities.Product, error) {
 	if r.findErr != nil {
-		return core.Fail[entities.Product](r.findErr)
+		return entities.Product{}, r.findErr
 	}
 	product := entities.Product{
 		BaseEntity: entities.BaseEntity{
@@ -31,24 +30,24 @@ func (r *FakeProductRepository) Create(input CreateProductInput) *core.Result[en
 		Active:      true,
 	}
 	r.products = append(r.products, product)
-	return core.Ok(product)
+	return product, nil
 }
 
-func (r *FakeProductRepository) FindByID(id string) *core.Result[entities.Product] {
+func (r *FakeProductRepository) FindByID(id string) (entities.Product, error) {
 	if r.findErr != nil {
-		return core.Fail[entities.Product](r.findErr)
+		return entities.Product{}, r.findErr
 	}
 	for _, p := range r.products {
 		if p.ID == id {
-			return core.Ok(p)
+			return p, nil
 		}
 	}
-	return core.Fail[entities.Product](&errors.ProductNotFoundError{ID: id})
+	return entities.Product{}, &errors.ProductNotFoundError{ID: id}
 }
 
-func (r *FakeProductRepository) FindByName(name string) *core.Result[[]entities.Product] {
+func (r *FakeProductRepository) FindByName(name string) ([]entities.Product, error) {
 	if r.findErr != nil {
-		return core.Fail[[]entities.Product](r.findErr)
+		return nil, r.findErr
 	}
 	var filtered []entities.Product
 	for _, p := range r.products {
@@ -56,30 +55,30 @@ func (r *FakeProductRepository) FindByName(name string) *core.Result[[]entities.
 			filtered = append(filtered, p)
 		}
 	}
-	return core.Ok(filtered)
+	return filtered, nil
 }
 
-func (r *FakeProductRepository) Search(filters ProductSearchFilters) *core.Result[[]entities.Product] {
+func (r *FakeProductRepository) Search(filters ProductSearchFilters) ([]entities.Product, error) {
 	if r.findErr != nil {
-		return core.Fail[[]entities.Product](r.findErr)
+		return nil, r.findErr
 	}
 	if len(r.products) == 0 {
-		return core.Fail[[]entities.Product](&errors.ProductNotFoundError{ID: filters.Name})
+		return nil, &errors.ProductNotFoundError{ID: filters.Name}
 	}
-	return core.Ok(r.products)
+	return r.products, nil
 }
 
-func (r *FakeProductRepository) Deactivate(id string) *core.Result[any] {
+func (r *FakeProductRepository) Deactivate(id string) error {
 	if r.findErr != nil {
-		return core.Fail[any](r.findErr)
+		return r.findErr
 	}
 	for i, p := range r.products {
 		if p.ID == id {
 			r.products[i].Active = false
-			return core.Ok[any](nil)
+			return nil
 		}
 	}
-	return core.Fail[any](&errors.ProductNotFoundError{ID: id})
+	return &errors.ProductNotFoundError{ID: id}
 }
 
 func strPtrToStr(s *string) string {
@@ -103,15 +102,10 @@ func TestCreateProduct_Success(t *testing.T) {
 		Presentation: strPtr("1L"),
 	}
 
-	result := service.CreateProduct(input)
+	_, err := service.CreateProduct(input)
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
-	}
-
-	value := result.GetValue()
-	if value.Name != "Milk" {
-		t.Errorf("expected name Milk, got %s", value.Name)
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 }
 
@@ -123,15 +117,10 @@ func TestCreateProduct_InvalidName(t *testing.T) {
 		Name: "",
 	}
 
-	result := service.CreateProduct(input)
+	_, err := service.CreateProduct(input)
 
-	if result.IsSuccess() {
-		t.Error("expected failure for empty name")
-	}
-
-	err := result.GetError()
 	if err == nil {
-		t.Error("expected error for empty name")
+		t.Error("expected failure for empty name")
 	}
 }
 
@@ -139,9 +128,9 @@ func TestGetProductByID_NotFound(t *testing.T) {
 	repo := NewFakeProductRepository()
 	service := NewProductService(repo)
 
-	result := service.GetProductByID("non-existent-id")
+	_, err := service.GetProductByID("non-existent-id")
 
-	if result.IsSuccess() {
+	if err == nil {
 		t.Error("expected failure for non-existent product")
 	}
 }
@@ -159,13 +148,12 @@ func TestSearchProducts_Success(t *testing.T) {
 		ActiveOnly: true,
 	}
 
-	result := service.SearchProducts(filters)
+	products, err := service.SearchProducts(filters)
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 
-	products := result.GetValue()
 	if len(products) != 2 {
 		t.Errorf("expected 2 products, got %d", len(products))
 	}
@@ -178,10 +166,10 @@ func TestDeactivateProduct_Success(t *testing.T) {
 	}
 	service := NewProductService(repo)
 
-	result := service.DeactivateProduct("550e8400-e29b-41d4-a716-446655440000")
+	err := service.DeactivateProduct("550e8400-e29b-41d4-a716-446655440000")
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 }
 
@@ -189,9 +177,9 @@ func TestDeactivateProduct_InvalidID(t *testing.T) {
 	repo := NewFakeProductRepository()
 	service := NewProductService(repo)
 
-	result := service.DeactivateProduct("invalid-id")
+	err := service.DeactivateProduct("invalid-id")
 
-	if result.IsSuccess() {
+	if err == nil {
 		t.Error("expected failure for invalid UUID")
 	}
 }

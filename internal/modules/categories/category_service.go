@@ -14,69 +14,48 @@ func NewCategoryService(repo CategoryRepository) *CategoryService {
 	return &CategoryService{repo: repo}
 }
 
-func (s *CategoryService) CreateCategory(input CreateCategoryInput) *core.Result[entities.Category] {
+func (s *CategoryService) CreateCategory(input CreateCategoryInput) (entities.Category, error) {
 	if err := s.validateCreateInput(input); err != nil {
-		return core.Fail[entities.Category](err)
+		return entities.Category{}, err
 	}
 
-	result := s.repo.FindByName(input.Name)
-	if !result.IsSuccess() {
-		return core.Fail[entities.Category](result.GetError())
+	existingCategories, err := s.repo.FindByName(input.Name)
+	if err != nil {
+		return entities.Category{}, err
 	}
 
-	existingCategories := result.GetValue()
 	for _, c := range existingCategories {
 		if c.Name == input.Name {
-			return core.Fail[entities.Category](&errors.CategoryAlreadyExistsError{Name: input.Name})
+			return entities.Category{}, &errors.CategoryAlreadyExistsError{Name: input.Name}
 		}
 	}
 
-	createResult := s.repo.Create(input)
-	if !createResult.IsSuccess() {
-		return core.Fail[entities.Category](createResult.GetError())
-	}
-
-	return core.Ok(createResult.GetValue())
+	return s.repo.Create(input)
 }
 
-func (s *CategoryService) GetCategoryByID(id string) *core.Result[entities.Category] {
+func (s *CategoryService) GetCategoryByID(id string) (entities.Category, error) {
 	if !core.IsValidUUIDString(id) {
-		return core.Fail[entities.Category](&errors.CategoryNotFoundError{ID: id})
+		return entities.Category{}, &errors.CategoryNotFoundError{ID: id}
 	}
 
-	result := s.repo.FindByID(id)
-	if !result.IsSuccess() {
-		return core.Fail[entities.Category](result.GetError())
-	}
-
-	return core.Ok(result.GetValue())
+	return s.repo.FindByID(id)
 }
 
-func (s *CategoryService) SearchCategories(filters CategorySearchFilters) *core.Result[[]entities.Category] {
-	result := s.repo.Search(filters)
-	if !result.IsSuccess() {
-		return core.Fail[[]entities.Category](result.GetError())
-	}
-
-	return core.Ok(result.GetValue())
+func (s *CategoryService) SearchCategories(filters CategorySearchFilters) ([]entities.Category, error) {
+	return s.repo.Search(filters)
 }
 
-func (s *CategoryService) DeleteCategory(id string) *core.Result[any] {
+func (s *CategoryService) DeleteCategory(id string) error {
 	if !core.IsValidUUIDString(id) {
-		return core.Fail[any](&errors.CategoryNotFoundError{ID: id})
+		return &errors.CategoryNotFoundError{ID: id}
 	}
 
-	existingResult := s.repo.FindByID(id)
-	if !existingResult.IsSuccess() {
-		return core.Fail[any](existingResult.GetError())
+	_, err := s.repo.FindByID(id)
+	if err != nil {
+		return err
 	}
 
-	result := s.repo.Delete(id)
-	if !result.IsSuccess() {
-		return core.Fail[any](result.GetError())
-	}
-
-	return core.Ok[any](nil)
+	return s.repo.Delete(id)
 }
 
 func (s *CategoryService) validateCreateInput(input CreateCategoryInput) error {

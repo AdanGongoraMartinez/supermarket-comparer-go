@@ -42,8 +42,8 @@ func createProduct(w http.ResponseWriter, r *http.Request, service *ProductServi
 		return
 	}
 
-	result := service.CreateProduct(input)
-	response := core.HandleResult(result, 201)
+	value, err := service.CreateProduct(input)
+	response := core.HandleResult(value, err, 201)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
@@ -58,24 +58,24 @@ func searchProducts(w http.ResponseWriter, r *http.Request, service *ProductServ
 		ActiveOnly: query.Get("activeOnly") != "false",
 	}
 
-	result := service.SearchProducts(filters)
-	response := core.HandleResult(result, 200)
+	value, err := service.SearchProducts(filters)
+	response := core.HandleResult(value, err, 200)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
 }
 
 func getProductByID(w http.ResponseWriter, r *http.Request, service *ProductService, id string) {
-	result := service.GetProductByID(id)
-	response := core.HandleResult(result, 200)
+	value, err := service.GetProductByID(id)
+	response := core.HandleResult(value, err, 200)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
 }
 
 func deleteProduct(w http.ResponseWriter, r *http.Request, service *ProductService, id string) {
-	result := service.DeactivateProduct(id)
-	response := core.HandleEmptyResult(result, 204)
+	err := service.DeactivateProduct(id)
+	response := core.HandleEmptyResult(err, 204)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	if response.StatusCode != 204 {
@@ -91,4 +91,3 @@ func sendError(w http.ResponseWriter, status int, message string) {
 		Error:   message,
 	})
 }
-

@@ -2,7 +2,6 @@ package categories
 
 import (
 	"gorm.io/gorm"
-	"supermarket-comparer-go/internal/core"
 	"supermarket-comparer-go/internal/database"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
@@ -14,37 +13,37 @@ func NewCategoryRepository() *CategoryRepositoryImpl {
 	return &CategoryRepositoryImpl{}
 }
 
-func (r *CategoryRepositoryImpl) Create(input CreateCategoryInput) *core.Result[entities.Category] {
+func (r *CategoryRepositoryImpl) Create(input CreateCategoryInput) (entities.Category, error) {
 	category := entities.CategoryModel{
 		Name: input.Name,
 	}
 
 	result := database.DB.Create(&category)
 	if result.Error != nil {
-		return core.Fail[entities.Category](errors.NewDatabaseError("failed to create category", result.Error))
+		return entities.Category{}, errors.NewDatabaseError("failed to create category", result.Error)
 	}
 
-	return core.Ok(r.mapModelToEntity(category))
+	return r.mapModelToEntity(category), nil
 }
 
-func (r *CategoryRepositoryImpl) FindByID(id string) *core.Result[entities.Category] {
+func (r *CategoryRepositoryImpl) FindByID(id string) (entities.Category, error) {
 	var category entities.CategoryModel
 	result := database.DB.First(&category, "id = ?", id)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			return core.Fail[entities.Category](&errors.CategoryNotFoundError{ID: id})
+			return entities.Category{}, &errors.CategoryNotFoundError{ID: id}
 		}
-		return core.Fail[entities.Category](errors.NewDatabaseError("failed to find category", result.Error))
+		return entities.Category{}, errors.NewDatabaseError("failed to find category", result.Error)
 	}
 
-	return core.Ok(r.mapModelToEntity(category))
+	return r.mapModelToEntity(category), nil
 }
 
-func (r *CategoryRepositoryImpl) FindByName(name string) *core.Result[[]entities.Category] {
+func (r *CategoryRepositoryImpl) FindByName(name string) ([]entities.Category, error) {
 	var categories []entities.CategoryModel
 	result := database.DB.Where("name = ?", name).Order("name").Find(&categories)
 	if result.Error != nil {
-		return core.Fail[[]entities.Category](errors.NewDatabaseError("failed to find categories", result.Error))
+		return nil, errors.NewDatabaseError("failed to find categories", result.Error)
 	}
 
 	entitiesList := make([]entities.Category, len(categories))
@@ -52,10 +51,10 @@ func (r *CategoryRepositoryImpl) FindByName(name string) *core.Result[[]entities
 		entitiesList[i] = r.mapModelToEntity(c)
 	}
 
-	return core.Ok(entitiesList)
+	return entitiesList, nil
 }
 
-func (r *CategoryRepositoryImpl) Search(filters CategorySearchFilters) *core.Result[[]entities.Category] {
+func (r *CategoryRepositoryImpl) Search(filters CategorySearchFilters) ([]entities.Category, error) {
 	var categories []entities.CategoryModel
 	query := database.DB.Model(&entities.CategoryModel{})
 
@@ -65,7 +64,7 @@ func (r *CategoryRepositoryImpl) Search(filters CategorySearchFilters) *core.Res
 
 	result := query.Find(&categories)
 	if result.Error != nil {
-		return core.Fail[[]entities.Category](errors.NewDatabaseError("failed to search categories", result.Error))
+		return nil, errors.NewDatabaseError("failed to search categories", result.Error)
 	}
 
 	entitiesList := make([]entities.Category, len(categories))
@@ -73,20 +72,20 @@ func (r *CategoryRepositoryImpl) Search(filters CategorySearchFilters) *core.Res
 		entitiesList[i] = r.mapModelToEntity(c)
 	}
 
-	return core.Ok(entitiesList)
+	return entitiesList, nil
 }
 
-func (r *CategoryRepositoryImpl) Delete(id string) *core.Result[any] {
+func (r *CategoryRepositoryImpl) Delete(id string) error {
 	result := database.DB.Delete(&entities.CategoryModel{}, "id = ?", id)
 	if result.Error != nil {
-		return core.Fail[any](errors.NewDatabaseError("failed to delete category", result.Error))
+		return errors.NewDatabaseError("failed to delete category", result.Error)
 	}
 
 	if result.RowsAffected == 0 {
-		return core.Fail[any](&errors.CategoryNotFoundError{ID: id})
+		return &errors.CategoryNotFoundError{ID: id}
 	}
 
-	return core.Ok[any](nil)
+	return nil
 }
 
 func (r *CategoryRepositoryImpl) mapModelToEntity(model entities.CategoryModel) entities.Category {

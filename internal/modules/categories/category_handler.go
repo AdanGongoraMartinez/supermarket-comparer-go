@@ -42,8 +42,8 @@ func createCategory(w http.ResponseWriter, r *http.Request, service *CategorySer
 		return
 	}
 
-	result := service.CreateCategory(input)
-	response := core.HandleResult(result, 201)
+	value, err := service.CreateCategory(input)
+	response := core.HandleResult(value, err, 201)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
@@ -56,24 +56,24 @@ func searchCategories(w http.ResponseWriter, r *http.Request, service *CategoryS
 		Name: query.Get("name"),
 	}
 
-	result := service.SearchCategories(filters)
-	response := core.HandleResult(result, 200)
+	value, err := service.SearchCategories(filters)
+	response := core.HandleResult(value, err, 200)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
 }
 
 func getCategoryByID(w http.ResponseWriter, r *http.Request, service *CategoryService, id string) {
-	result := service.GetCategoryByID(id)
-	response := core.HandleResult(result, 200)
+	value, err := service.GetCategoryByID(id)
+	response := core.HandleResult(value, err, 200)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	json.NewEncoder(w).Encode(response)
 }
 
 func deleteCategory(w http.ResponseWriter, r *http.Request, service *CategoryService, id string) {
-	result := service.DeleteCategory(id)
-	response := core.HandleEmptyResult(result, 204)
+	err := service.DeleteCategory(id)
+	response := core.HandleEmptyResult(err, 204)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.StatusCode)
 	if response.StatusCode != 204 {

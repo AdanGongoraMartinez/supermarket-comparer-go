@@ -3,7 +3,6 @@ package categories
 import (
 	"testing"
 
-	"supermarket-comparer-go/internal/core"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
 )
@@ -17,9 +16,9 @@ func NewFakeCategoryRepository() *FakeCategoryRepository {
 	return &FakeCategoryRepository{categories: []entities.Category{}}
 }
 
-func (r *FakeCategoryRepository) Create(input CreateCategoryInput) *core.Result[entities.Category] {
+func (r *FakeCategoryRepository) Create(input CreateCategoryInput) (entities.Category, error) {
 	if r.findErr != nil {
-		return core.Fail[entities.Category](r.findErr)
+		return entities.Category{}, r.findErr
 	}
 	category := entities.Category{
 		BaseEntity: entities.BaseEntity{
@@ -28,24 +27,24 @@ func (r *FakeCategoryRepository) Create(input CreateCategoryInput) *core.Result[
 		Name: input.Name,
 	}
 	r.categories = append(r.categories, category)
-	return core.Ok(category)
+	return category, nil
 }
 
-func (r *FakeCategoryRepository) FindByID(id string) *core.Result[entities.Category] {
+func (r *FakeCategoryRepository) FindByID(id string) (entities.Category, error) {
 	if r.findErr != nil {
-		return core.Fail[entities.Category](r.findErr)
+		return entities.Category{}, r.findErr
 	}
 	for _, c := range r.categories {
 		if c.ID == id {
-			return core.Ok(c)
+			return c, nil
 		}
 	}
-	return core.Fail[entities.Category](&errors.CategoryNotFoundError{ID: id})
+	return entities.Category{}, &errors.CategoryNotFoundError{ID: id}
 }
 
-func (r *FakeCategoryRepository) FindByName(name string) *core.Result[[]entities.Category] {
+func (r *FakeCategoryRepository) FindByName(name string) ([]entities.Category, error) {
 	if r.findErr != nil {
-		return core.Fail[[]entities.Category](r.findErr)
+		return nil, r.findErr
 	}
 	var filtered []entities.Category
 	for _, c := range r.categories {
@@ -53,27 +52,27 @@ func (r *FakeCategoryRepository) FindByName(name string) *core.Result[[]entities
 			filtered = append(filtered, c)
 		}
 	}
-	return core.Ok(filtered)
+	return filtered, nil
 }
 
-func (r *FakeCategoryRepository) Search(filters CategorySearchFilters) *core.Result[[]entities.Category] {
+func (r *FakeCategoryRepository) Search(filters CategorySearchFilters) ([]entities.Category, error) {
 	if r.findErr != nil {
-		return core.Fail[[]entities.Category](r.findErr)
+		return nil, r.findErr
 	}
-	return core.Ok(r.categories)
+	return r.categories, nil
 }
 
-func (r *FakeCategoryRepository) Delete(id string) *core.Result[any] {
+func (r *FakeCategoryRepository) Delete(id string) error {
 	if r.findErr != nil {
-		return core.Fail[any](r.findErr)
+		return r.findErr
 	}
 	for i, c := range r.categories {
 		if c.ID == id {
 			r.categories = append(r.categories[:i], r.categories[i+1:]...)
-			return core.Ok[any](nil)
+			return nil
 		}
 	}
-	return core.Fail[any](&errors.CategoryNotFoundError{ID: id})
+	return &errors.CategoryNotFoundError{ID: id}
 }
 
 func TestCreateCategory_Success(t *testing.T) {
@@ -84,15 +83,10 @@ func TestCreateCategory_Success(t *testing.T) {
 		Name: "Dairy",
 	}
 
-	result := service.CreateCategory(input)
+	_, err := service.CreateCategory(input)
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
-	}
-
-	value := result.GetValue()
-	if value.Name != "Dairy" {
-		t.Errorf("expected name Dairy, got %s", value.Name)
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 }
 
@@ -104,15 +98,10 @@ func TestCreateCategory_InvalidName(t *testing.T) {
 		Name: "",
 	}
 
-	result := service.CreateCategory(input)
+	_, err := service.CreateCategory(input)
 
-	if result.IsSuccess() {
-		t.Error("expected failure for empty name")
-	}
-
-	err := result.GetError()
 	if err == nil {
-		t.Error("expected error for empty name")
+		t.Error("expected failure for empty name")
 	}
 }
 
@@ -120,9 +109,9 @@ func TestGetCategoryByID_NotFound(t *testing.T) {
 	repo := NewFakeCategoryRepository()
 	service := NewCategoryService(repo)
 
-	result := service.GetCategoryByID("non-existent-id")
+	_, err := service.GetCategoryByID("non-existent-id")
 
-	if result.IsSuccess() {
+	if err == nil {
 		t.Error("expected failure for non-existent category")
 	}
 }
@@ -139,13 +128,12 @@ func TestSearchCategories_Success(t *testing.T) {
 		Name: "",
 	}
 
-	result := service.SearchCategories(filters)
+	categories, err := service.SearchCategories(filters)
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 
-	categories := result.GetValue()
 	if len(categories) != 2 {
 		t.Errorf("expected 2 categories, got %d", len(categories))
 	}
@@ -158,10 +146,10 @@ func TestDeleteCategory_Success(t *testing.T) {
 	}
 	service := NewCategoryService(repo)
 
-	result := service.DeleteCategory("550e8400-e29b-41d4-a716-446655440000")
+	err := service.DeleteCategory("550e8400-e29b-41d4-a716-446655440000")
 
-	if !result.IsSuccess() {
-		t.Errorf("expected success, got error: %v", result.GetError())
+	if err != nil {
+		t.Errorf("expected success, got error: %v", err)
 	}
 }
 
@@ -169,9 +157,9 @@ func TestDeleteCategory_InvalidID(t *testing.T) {
 	repo := NewFakeCategoryRepository()
 	service := NewCategoryService(repo)
 
-	result := service.DeleteCategory("invalid-id")
+	err := service.DeleteCategory("invalid-id")
 
-	if result.IsSuccess() {
+	if err == nil {
 		t.Error("expected failure for invalid UUID")
 	}
 }
