@@ -48,12 +48,3 @@ func InitDB() error {
 	log.Println("Database connected and migrated successfully")
 	return nil
 }
-
-func CloseDB() error {
-	sqlDB, err := DB.DB()
-	if err != nil {
-		return err
-	}
-	return sqlDB.Close()
-}
-

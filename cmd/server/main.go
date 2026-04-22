@@ -23,10 +23,6 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// if err := database.CloseDB(); err != nil {
-	// 	log.Fatalf("Failed to close database: %v", err)
-	// }
-
 	productRepo := products.NewProductRepository()
 	productService := products.NewProductService(productRepo)
 

@@ -1,8 +1,6 @@
 package products
 
 import (
-	"strings"
-
 	"supermarket-comparer-go/internal/database"
 	"supermarket-comparer-go/internal/entities"
 	"supermarket-comparer-go/internal/errors"
@@ -151,26 +149,4 @@ func (r *ProductRepositoryImpl) FindByNameAndBrand(name, brand, presentation str
 	}
 
 	return r.mapModelToEntity(product), nil
-}
-
-func containsBrandAndPresentation(products []entities.ProductModel, name, brand, presentation string) bool {
-	for _, p := range products {
-		matchName := strings.EqualFold(p.Name, name)
-		matchBrand := false
-		if brand == "" {
-			matchBrand = p.Brand == nil
-		} else {
-			matchBrand = p.Brand != nil && *p.Brand == brand
-		}
-		matchPresentation := false
-		if presentation == "" {
-			matchPresentation = p.Presentation == nil
-		} else {
-			matchPresentation = p.Presentation != nil && *p.Presentation == presentation
-		}
-		if matchName && matchBrand && matchPresentation {
-			return true
-		}
-	}
-	return false
 }
