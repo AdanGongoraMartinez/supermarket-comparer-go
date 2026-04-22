@@ -128,32 +128,18 @@ result := database.DB.First(&product, "id = ?", id)
 
 ---
 
-## 4. Anormalidades
-
-### 4.3 Strings hardcodeadas
-
-**Ubicación**: `cmd/server/main.go:55`
-
-```go
-ports := []string{"3000", "3001", "3002", "3003", "3004", "8080", "8081"}
-```
-
-**Problema**: Puertos hardcodeados - deberían estar en configuración o constants.
-
----
-
 ## 5. Recomendaciones de Prioridad
 
-| Prioridad | Issue              | Reparación                                                    |
-| --------- | ------------------ | ------------------------------------------------------------- |
-| Alta      | Código sin usar    | Eliminar `FindByNameAndBrand`, `containsBrandAndPresentation` |
-| Alta      | Error handling 400 | Diferenciar códigos: 400 vs 404 vs 500                        |
-| Media     | Logging verboso    | Cambiar a `logger.Warn` o `logger.Silent`                     |
-| Media     | Soft/Hard delete   | Estandarizar comportamiento de DELETE                         |
-| Media     | Invalid ID error   | CategoryService debe retornar error de ID inválido            |
-| Baja      | Graceful shutdown  | Agregar manejo de señales                                     |
-| Baja      | Hardcoded ports    | Mover a constants o config                                    |
-| Baja      | Validación FK      | Agregar validación de CategoryID existe                       |
+| Prioridad | Issue              | Reparación                                         |
+| --------- | ------------------ | -------------------------------------------------- |
+| Alta      | Código sin usar    | Eliminar `FindByNameAndBrand`                      |
+| Alta      | Error handling 400 | Diferenciar códigos: 400 vs 404 vs 500             |
+| Media     | Logging verboso    | Cambiar a `logger.Warn` o `logger.Silent`          |
+| Media     | Soft/Hard delete   | Estandarizar comportamiento de DELETE              |
+| Media     | Invalid ID error   | CategoryService debe retornar error de ID inválido |
+| Baja      | Graceful shutdown  | Agregar manejo de señales                          |
+| Baja      | Hardcoded ports    | Mover a constants o config                         |
+| Baja      | Validación FK      | Agregar validación de CategoryID existe            |
 
 ---
 

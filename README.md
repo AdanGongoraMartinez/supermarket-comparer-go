@@ -22,7 +22,7 @@ docker-compose up -d
 go run cmd/server/main.go
 ```
 
-El servidor iniciara en `http://localhost:3000` (o el siguiente puerto disponible).
+El servidor iniciara en `http://localhost:3000`.
 
 ## Comandos
 
@@ -73,4 +73,3 @@ go vet ./...
 - Documentacion de la API (Swagger/OpenAPI)
 - Tests de integracion
 - Despliegue (Dockerfile, CI/CD)
-
