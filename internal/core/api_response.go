@@ -1,12 +1,16 @@
 package core
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"supermarket-comparer-go/internal/errors"
+)
 
 type APIResponse struct {
-	StatusCode int         `json:"-"`
-	Success    bool        `json:"success"`
-	Data       interface{} `json:"data,omitempty"`
-	Error      interface{} `json:"error,omitempty"`
+	StatusCode int  `json:"-"`
+	Success    bool `json:"success"`
+	Data       any  `json:"data,omitempty"`
+	Error      any  `json:"error,omitempty"`
 }
 
 func (r *APIResponse) ToJSON() []byte {
@@ -19,7 +23,7 @@ func HandleResult[T any](value T, err error, successStatus int) *APIResponse {
 		return &APIResponse{
 			StatusCode: getErrorStatus(err),
 			Success:    false,
-			Error:      err,
+			Error:      err.Error(),
 		}
 	}
 	return &APIResponse{
@@ -34,7 +38,7 @@ func HandleEmptyResult(err error, successStatus int) *APIResponse {
 		return &APIResponse{
 			StatusCode: getErrorStatus(err),
 			Success:    false,
-			Error:      err,
+			Error:      err.Error(),
 		}
 	}
 	return &APIResponse{
@@ -47,5 +51,9 @@ func getErrorStatus(err error) int {
 	if err == nil {
 		return 500
 	}
+	if sc, ok := err.(errors.StatusCoder); ok {
+		return sc.GetStatusCode()
+	}
 	return 400
 }
+

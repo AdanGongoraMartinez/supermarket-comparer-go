@@ -47,7 +47,7 @@ func (s *ProductService) CreateProduct(input CreateProductInput) (entities.Produ
 
 func (s *ProductService) GetProductByID(id string) (entities.Product, error) {
 	if !core.IsValidUUIDString(id) {
-		return entities.Product{}, &errors.InvalidProductIDError{ID: id}
+		return entities.Product{}, errors.NewInvalidProductIDError(id)
 	}
 
 	return s.repo.FindByID(id)
@@ -59,7 +59,7 @@ func (s *ProductService) SearchProducts(filters ProductSearchFilters) ([]entitie
 
 func (s *ProductService) DeactivateProduct(id string) error {
 	if !core.IsValidUUIDString(id) {
-		return &errors.InvalidProductIDError{ID: id}
+		return errors.NewInvalidProductIDError(id)
 	}
 
 	_, err := s.repo.FindByID(id)
@@ -72,8 +72,7 @@ func (s *ProductService) DeactivateProduct(id string) error {
 
 func (s *ProductService) validateCreateInput(input CreateProductInput) error {
 	if input.Name == "" {
-		return &errors.InvalidProductNameError{Name: input.Name}
+		return errors.NewInvalidProductNameError(input.Name)
 	}
 	return nil
 }
-

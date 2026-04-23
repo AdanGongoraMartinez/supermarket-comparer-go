@@ -12,9 +12,9 @@ import (
 func ProductHandler(service *ProductService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == "POST" && r.URL.Path == "/products":
+		case r.Method == "POST" && r.URL.Path == "/products/":
 			createProduct(w, r, service)
-		case r.Method == "GET" && r.URL.Path == "/products":
+		case r.Method == "GET" && r.URL.Path == "/products/":
 			searchProducts(w, r, service)
 		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/products/"):
 			id := strings.TrimPrefix(r.URL.Path, "/products/")
@@ -91,3 +91,4 @@ func sendError(w http.ResponseWriter, status int, message string) {
 		Error:   message,
 	})
 }
+

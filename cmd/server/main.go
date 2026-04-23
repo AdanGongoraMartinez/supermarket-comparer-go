@@ -34,8 +34,8 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	mux.Handle("/products", products.ProductHandler(productService))
-	mux.Handle("/categories", categories.CategoryHandler(categoryService))
+	mux.Handle("/products/", products.ProductHandler(productService))
+	mux.Handle("/categories/", categories.CategoryHandler(categoryService))
 
 	port := os.Getenv("PORT")
 
