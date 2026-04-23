@@ -26,7 +26,7 @@ func (s *CategoryService) CreateCategory(input CreateCategoryInput) (entities.Ca
 
 	for _, c := range existingCategories {
 		if c.Name == input.Name {
-			return entities.Category{}, &errors.CategoryAlreadyExistsError{Name: input.Name}
+			return entities.Category{}, errors.NewCategoryAlreadyExistsError(input.Name)
 		}
 	}
 
@@ -35,7 +35,7 @@ func (s *CategoryService) CreateCategory(input CreateCategoryInput) (entities.Ca
 
 func (s *CategoryService) GetCategoryByID(id string) (entities.Category, error) {
 	if !core.IsValidUUIDString(id) {
-		return entities.Category{}, &errors.CategoryNotFoundError{ID: id}
+		return entities.Category{}, errors.NewInvalidCategoryIDError(id)
 	}
 
 	return s.repo.FindByID(id)
@@ -47,7 +47,7 @@ func (s *CategoryService) SearchCategories(filters CategorySearchFilters) ([]ent
 
 func (s *CategoryService) DeleteCategory(id string) error {
 	if !core.IsValidUUIDString(id) {
-		return &errors.CategoryNotFoundError{ID: id}
+		return errors.NewInvalidCategoryIDError(id)
 	}
 
 	_, err := s.repo.FindByID(id)
@@ -60,7 +60,8 @@ func (s *CategoryService) DeleteCategory(id string) error {
 
 func (s *CategoryService) validateCreateInput(input CreateCategoryInput) error {
 	if input.Name == "" {
-		return &errors.InvalidCategoryNameError{}
+		return errors.NewInvalidCategoryNameError(input.Name)
 	}
 	return nil
 }
+

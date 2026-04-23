@@ -12,9 +12,9 @@ import (
 func CategoryHandler(service *CategoryService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == "POST" && r.URL.Path == "/categories":
+		case r.Method == "POST" && r.URL.Path == "/categories/":
 			createCategory(w, r, service)
-		case r.Method == "GET" && r.URL.Path == "/categories":
+		case r.Method == "GET" && r.URL.Path == "/categories/":
 			searchCategories(w, r, service)
 		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/categories/"):
 			id := strings.TrimPrefix(r.URL.Path, "/categories/")
@@ -86,6 +86,7 @@ func sendError(w http.ResponseWriter, status int, message string) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(core.APIResponse{
 		Success: false,
-		Error:  message,
+		Error:   message,
 	})
 }
+

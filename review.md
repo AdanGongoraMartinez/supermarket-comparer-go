@@ -12,12 +12,9 @@ Se analizaron todos los archivos del proyecto identificando problemas de código
 
 **Archivo**: `internal/modules/products/product_repository_impl.go`
 
-| Función                        | Líneas  | Descripción                                  |
-| ------------------------------ | ------- | -------------------------------------------- |
-| `FindByNameAndBrand`           | 129-154 | Definida pero nunca llamada                  |
-| `containsBrandAndPresentation` | 156-176 | Helper no usado, definida pero nunca llamada |
-
-### 1.3 Función no llamada
+| Función              | Líneas  | Descripción                 |
+| -------------------- | ------- | --------------------------- |
+| `FindByNameAndBrand` | 129-154 | Definida pero nunca llamada |
 
 ## 2. Malas Prácticas
 
@@ -51,37 +48,10 @@ time.Sleep(10 * time.Millisecond)
 
 **Problema**: Sleep de 10ms después de cerrar el listener es innecesario.
 
-### 2.4 Manejo de errores genérico
-
-**Ubicación**: `internal/core/api_response.go:46-51`
-
-```go
-func getErrorStatus(err error) int {
-    if err == nil {
-        return 500
-    }
-    return 400  // Siempre 400 para cualquier error
-}
-```
-
-**Problema**: Todos los errores retornan 400, incluyendo 404 (not found), 500 (db errors), etc.
-
 ### 2.5 Falta validación de Foreign Key
 
 **Ubicación**: `internal/modules/products/product_service.go`
 **Problema**: Al crear un producto con `CategoryID`, no se valida que la categoría existe realmente.
-
-### 2.6 Validación inconsistente de ID
-
-**Ubicación**: `internal/modules/categories/category_service.go:49`
-
-```go
-if !core.IsValidUUIDString(id) {
-    return &errors.CategoryNotFoundError{ID: id}  // Retorna "not found" para ID inválido
-}
-```
-
-**Problema**:返错误 "not found" cuando el ID es inválido - debería ser "invalid ID error".
 
 ---
 
@@ -95,13 +65,6 @@ if !core.IsValidUUIDString(id) {
 | Categories | DELETE    | Hard delete (elimina físicos) |
 
 **Impacto**: Inconsistencia para el usuario - DELETE behaves differently según el recurso.
-
-### 3.2 Error types inconsistentes
-
-| Servicio        | ID Inválido             | Error Retornado                                      |
-| --------------- | ----------------------- | ---------------------------------------------------- |
-| ProductService  | `InvalidProductIDError` | ✅ Correcto                                          |
-| CategoryService | `CategoryNotFoundError` | ❌ Incorrecto (debería ser `InvalidCategoryIDError`) |
 
 ### 3.3 Ausencia de Update (PUT/PATCH)
 
@@ -130,16 +93,15 @@ result := database.DB.First(&product, "id = ?", id)
 
 ## 5. Recomendaciones de Prioridad
 
-| Prioridad | Issue              | Reparación                                         |
-| --------- | ------------------ | -------------------------------------------------- |
-| Alta      | Código sin usar    | Eliminar `FindByNameAndBrand`                      |
-| Alta      | Error handling 400 | Diferenciar códigos: 400 vs 404 vs 500             |
-| Media     | Logging verboso    | Cambiar a `logger.Warn` o `logger.Silent`          |
-| Media     | Soft/Hard delete   | Estandarizar comportamiento de DELETE              |
-| Media     | Invalid ID error   | CategoryService debe retornar error de ID inválido |
-| Baja      | Graceful shutdown  | Agregar manejo de señales                          |
-| Baja      | Hardcoded ports    | Mover a constants o config                         |
-| Baja      | Validación FK      | Agregar validación de CategoryID existe            |
+| Prioridad | Issue             | Reparación                                         |
+| --------- | ----------------- | -------------------------------------------------- |
+| Alta      | Código sin usar   | Eliminar `FindByNameAndBrand`                      |
+| Media     | Logging verboso   | Cambiar a `logger.Warn` o `logger.Silent`          |
+| Media     | Soft/Hard delete  | Estandarizar comportamiento de DELETE              |
+| Media     | Invalid ID error  | CategoryService debe retornar error de ID inválido |
+| Baja      | Graceful shutdown | Agregar manejo de señales                          |
+| Baja      | Hardcoded ports   | Mover a constants o config                         |
+| Baja      | Validación FK     | Agregar validación de CategoryID existe            |
 
 ---
 
@@ -157,4 +119,3 @@ result := database.DB.First(&product, "id = ?", id)
 ---
 
 _Review generado el 22/04/2026_
-
